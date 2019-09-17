@@ -1,2 +1,4 @@
 config/config.json
 data/*
+src/logs/*
+src/logs
