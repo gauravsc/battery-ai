@@ -1,5 +1,5 @@
 config/config.json
-data/*
+/data/*
 src/logs/*
 src/logs
 .DS_Store
