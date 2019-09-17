@@ -7,7 +7,7 @@ from elsapy.elssearch import ElsSearch
 import json, requests
     
 ## Load configuration
-con_file = open("../config/config.json")
+con_file = open("./config/config.json")
 config = json.load(con_file)
 con_file.close()
 
@@ -36,11 +36,13 @@ def extract_eids(word):
     return set(eids)
 
 
-words_to_search = ['Electrochemical', 'electrochemistry', 'optoelectronic properties',
-'functional materials', 'nanostructures', 'theroelectrics', 'thermoelectricity', 
-'metal oxides', 'conducting metal oxides', 'battery materials', 'photovoltaic materials',
-'semiconductor materials', 'electrolytes', 'cathode materials', 'anode materials', 
-'organic semiconductors', 'inorganic semiconductors', 'organic electronics', 'Energy storage']
+words_to_search = ['Electrochemical']
+
+# 'electrochemistry', 'optoelectronic properties',
+# 'functional materials', 'nanostructures', 'theroelectrics', 'thermoelectricity', 
+# 'metal oxides', 'conducting metal oxides', 'battery materials', 'photovoltaic materials',
+# 'semiconductor materials', 'electrolytes', 'cathode materials', 'anode materials', 
+# 'organic semiconductors', 'inorganic semiconductors', 'organic electronics', 'Energy storage']
 
 
 
@@ -53,7 +55,7 @@ for word in words_to_search:
     set_of_eids = set_of_eids.union(eids)
 
 
-json.dump(list(set_of_eids), open('../data/eids_to_extract.json', 'w'))
+json.dump(list(set_of_eids), open('./data/eids_to_extract.json', 'w'))
 
 
 
