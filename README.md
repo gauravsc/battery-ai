@@ -1,1 +1,1 @@
-# batter-ai
+#Using AI for Material Discovery
