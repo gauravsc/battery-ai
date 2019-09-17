@@ -2,3 +2,4 @@ config/config.json
 data/*
 src/logs/*
 src/logs
+.DS_Store
