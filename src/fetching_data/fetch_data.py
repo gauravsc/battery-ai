@@ -6,7 +6,8 @@ from elsapy.elsdoc import FullDoc, AbsDoc
 from elsapy.elssearch import ElsSearch
 import json, requests
 import urllib.parse
-    
+import os.path
+
 ## Load configuration
 con_file = open("./config/config.json")
 config = json.load(con_file)
@@ -20,7 +21,7 @@ client.inst_token = config['insttoken']
 def retrieve_abstracts(headers, eid):
     url = 'https://api.elsevier.com/content/abstract/eid/'+eid
     r = requests.get(url, headers = headers)
-    r = json.loads(r)
+    r = json.loads(r.text)
     return r['abstracts-retrieval-response']['coredata']['dc:description']
 
 
@@ -61,13 +62,11 @@ def extract_eids(headers, word):
     return set(eids)
 
 
-words_to_search = ['Electrochemical']
-
-# 'electrochemistry', 'optoelectronic properties',
-# 'functional materials', 'nanostructures', 'theroelectrics', 'thermoelectricity', 
-# 'metal oxides', 'conducting metal oxides', 'battery materials', 'photovoltaic materials',
-# 'semiconductor materials', 'electrolytes', 'cathode materials', 'anode materials', 
-# 'organic semiconductors', 'inorganic semiconductors', 'organic electronics', 'Energy storage']
+words_to_search = ['Electrochemical', 'electrochemistry', 'optoelectronic properties',
+'functional materials', 'nanostructures', 'theroelectrics', 'thermoelectricity', 
+'metal oxides', 'conducting metal oxides', 'battery materials', 'photovoltaic materials',
+'semiconductor materials', 'electrolytes', 'cathode materials', 'anode materials', 
+'organic semiconductors', 'inorganic semiconductors', 'organic electronics', 'Energy storage']
 
 headers = {
             "X-ELS-APIKey"  : config['apikey'],
@@ -75,18 +74,18 @@ headers = {
             }
 
 
-# set of eids to avoid duplication
-set_of_eids = set()
-
 for word in words_to_search:
+    if os.path.isfile('./data/eids/eids_to_extract'+word+'.json'):
+        # this words has already been extracted
+        continue
+    else:
+        # set of eids to avoid duplication
+        set_of_eids = set()
+    
     print ("words being searched: ", word)
     eids = extract_eids(headers, word)
     set_of_eids = set_of_eids.union(eids)
-
-
-json.dump(list(set_of_eids), open('./data/eids_to_extract.json', 'w'))
-
-
+    json.dump(list(set_of_eids), open('./data/eids/eids_to_extract'+word+'.json', 'w'))
 
 
 
