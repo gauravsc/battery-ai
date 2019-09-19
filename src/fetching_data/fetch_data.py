@@ -29,13 +29,15 @@ def extract_eids(headers, word):
     # all results
     base_url = 'https://api.elsevier.com/content/search/scopus?'
     query = "TITLE-ABS-KEY("+ word +") PUBYEAR > 2010"
-    count = 25
+    count = 200
+    cursor = '*'
 
     params = {
         'query': query,
         'start': '0',
         'count': count
         }
+
     url = base_url+urllib.parse.urlencode(params)
     r = json.loads(requests.get(url, headers = headers).text)
     total_results = int(r['search-results']['opensearch:totalResults'])
@@ -46,16 +48,35 @@ def extract_eids(headers, word):
 
         params = {
         'query': query,
-        'start': start,
-        'count': count
+        'count': count,
+        'cursor': cursor
         }
 
         url = base_url+urllib.parse.urlencode(params)
         r = requests.get(url, headers = headers)
-        r = json.loads(r.text)
+        results = json.loads(r.text)
+
+        # set cursor to next
+        cursor = results['search-results']['cursor']['@next']
         
-        eids.append([doc['eid'] for doc in r['search-results']['entry']])
+        if 'search-results' in results and 'entry' in results['search-results']:
+            for doc in results['search-results']['entry']:
+                if 'eid' in doc:
+                    eids.append(doc['eid'])
+        else:
+            print (results.keys(), results)
+
+        # eids.append([doc['eid'] for doc in results['search-results']['entry']])
         start += count
+
+        # print current length of the eids
+        print ("EIDS already extracted for " , word, ": ", len(eids))
+
+        # find out quota limits
+        print ("X-RateLimit-Limit: ", r.headers['X-RateLimit-Limit'])
+        print ("X-RateLimit-Remaining: ", r.headers['X-RateLimit-Remaining'])
+        print ("X-RateLimit-Reset: ", r.headers['X-RateLimit-Reset'])
+
 
     eids = [eid for sublist in eids for eid in sublist]
 
@@ -85,6 +106,9 @@ for word in words_to_search:
     print ("words being searched: ", word)
     eids = extract_eids(headers, word)
     set_of_eids = set_of_eids.union(eids)
+    print ("***************************")
+    print ("# EIDS extracted: ", len(set_of_eids))
+    print ("***************************")
     json.dump(list(set_of_eids), open('./data/eids/eids_to_extract'+word+'.json', 'w'))
 
 
