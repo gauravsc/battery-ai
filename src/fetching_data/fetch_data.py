@@ -41,6 +41,7 @@ def extract_eids(headers, word):
     url = base_url+urllib.parse.urlencode(params)
     r = json.loads(requests.get(url, headers = headers).text)
     total_results = int(r['search-results']['opensearch:totalResults'])
+    # total_results = 400
 
     start = 0; eids = []
     while start < total_results - count:
@@ -57,7 +58,10 @@ def extract_eids(headers, word):
         results = json.loads(r.text)
 
         # set cursor to next
-        cursor = results['search-results']['cursor']['@next']
+        if 'search-results' in results and 'cursor' in results['search-results']:
+            cursor = results['search-results']['cursor']['@next']
+        else:
+            print (results)
         
         if 'search-results' in results and 'entry' in results['search-results']:
             for doc in results['search-results']['entry']:
@@ -77,23 +81,26 @@ def extract_eids(headers, word):
         print ("X-RateLimit-Remaining: ", r.headers['X-RateLimit-Remaining'])
         print ("X-RateLimit-Reset: ", r.headers['X-RateLimit-Reset'])
 
-
-    eids = [eid for sublist in eids for eid in sublist]
-
     return set(eids)
 
 
-words_to_search = ['Electrochemical', 'electrochemistry', 'optoelectronic properties',
-'functional materials', 'nanostructures', 'theroelectrics', 'thermoelectricity', 
-'metal oxides', 'conducting metal oxides', 'battery materials', 'photovoltaic materials',
-'semiconductor materials', 'electrolytes', 'cathode materials', 'anode materials', 
-'organic semiconductors', 'inorganic semiconductors', 'organic electronics', 'Energy storage']
+#  words_to_search = ['Electrochemical', 'electrochemistry', 'optoelectronic properties',
+# 'functional materials', 'nanostructures', 'theroelectrics', 'thermoelectricity', 
+# 'metal oxides', 'conducting metal oxides', 'battery materials', 'photovoltaic materials',
+# 'semiconductor materials', 'electrolytes', 'cathode materials', 'anode materials', 
+# 'organic semiconductors', 'inorganic semiconductors', 'organic electronics', 'Energy storage']
+
+
+with open('./search_terms.csv', 'r') as content_file:
+    words_to_search = content_file.read()
+    words_to_search = words_to_search.split('\n')
+    words_to_search = [word.strip() for word in words_to_search]    
+
 
 headers = {
             "X-ELS-APIKey"  : config['apikey'],
             "Accept"        : 'application/json'
             }
-
 
 for word in words_to_search:
     if os.path.isfile('./data/eids/eids_to_extract'+word+'.json'):
@@ -110,8 +117,6 @@ for word in words_to_search:
     print ("# EIDS extracted: ", len(set_of_eids))
     print ("***************************")
     json.dump(list(set_of_eids), open('./data/eids/eids_to_extract'+word+'.json', 'w'))
-
-
 
 
 # for eid in eids:

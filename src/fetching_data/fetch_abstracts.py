@@ -1,6 +1,7 @@
 import json, requests
 import urllib.parse
 import os, os.path
+from random import shuffle
 
 ## Load configuration
 con_file = open("./config/config.json")
@@ -11,6 +12,11 @@ con_file.close()
 client = ElsClient(config['apikey'])
 client.inst_token = config['insttoken']
 
+## init headers 
+headers = {
+            "X-ELS-APIKey"  : config['apikey'],
+            "Accept"        : 'application/json'
+            }
 
 def retrieve_abstracts(headers, eid):
     url = 'https://api.elsevier.com/content/abstract/eid/'+eid
@@ -30,14 +36,11 @@ def extract_all_eids():
 		eids += json.load(open(base_url+file,'r'))
 	eids = list(set(eids))
 
+	shuffle(eids)
+
 	return eids	
 
 eids_to_extract = extract_all_eids() 
-
-headers = {
-            "X-ELS-APIKey"  : config['apikey'],
-            "Accept"        : 'application/json'
-            }
 
 fwrite = open('./data/abstracts.txt', 'a+')
 
