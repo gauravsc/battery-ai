@@ -91,7 +91,7 @@ def extract_eids(headers, word):
 # 'organic semiconductors', 'inorganic semiconductors', 'organic electronics', 'Energy storage']
 
 
-with open('./search_terms.csv', 'r') as content_file:
+with open('./src/search_terms.csv', 'r') as content_file:
     words_to_search = content_file.read()
     words_to_search = words_to_search.split('\n')
     words_to_search = [word.strip() for word in words_to_search]    
@@ -103,7 +103,7 @@ headers = {
             }
 
 for word in words_to_search:
-    if os.path.isfile('./data/eids/eids_to_extract'+word+'.json'):
+    if os.path.isfile('./data/eids/eids_to_extract_'+word+'.json'):
         # this words has already been extracted
         continue
     else:
@@ -116,7 +116,7 @@ for word in words_to_search:
     print ("***************************")
     print ("# EIDS extracted: ", len(set_of_eids))
     print ("***************************")
-    json.dump(list(set_of_eids), open('./data/eids/eids_to_extract'+word+'.json', 'w'))
+    json.dump(list(set_of_eids), open('./data/eids/eids_to_extract_'+word+'.json', 'w'))
 
 
 # for eid in eids:

@@ -2,28 +2,26 @@ import json, requests
 import urllib.parse
 import os, os.path
 from random import shuffle
+import csv
+
 
 ## Load configuration
 con_file = open("./config/config.json")
 config = json.load(con_file)
 con_file.close()
 
-## initialize client
-client = ElsClient(config['apikey'])
-client.inst_token = config['insttoken']
-
 ## init headers 
 headers = {
-            "X-ELS-APIKey"  : config['apikey'],
-            "Accept"        : 'application/json'
-            }
+			"X-ELS-APIKey"  : config['apikey'],
+			"Accept"        : 'application/json'
+			}
 
 def retrieve_abstracts(headers, eid):
-    url = 'https://api.elsevier.com/content/abstract/eid/'+eid
-    r = requests.get(url, headers = headers)
-    results = json.loads(r.text)
+	url = 'https://api.elsevier.com/content/abstract/eid/'+eid
+	r = requests.get(url, headers = headers)
+	results = json.loads(r.text)
 
-    return results['abstracts-retrieval-response']['coredata']['dc:description']
+	return results['abstracts-retrieval-response']['coredata']['dc:description']
 
 
 def extract_all_eids():
@@ -41,22 +39,26 @@ def extract_all_eids():
 	return eids	
 
 eids_to_extract = extract_all_eids() 
-
-fwrite = open('./data/abstracts.txt', 'a+')
+print ("Total abstracts to download: ", len(eids_to_extract))
 
 if os.path.isfile('./data/ctr.json'):
 	ctr = int(json.loads(open('./data/ctr.json', 'r'))['ctr'])
 else:
 	ctr = 0
 
-abstracts = []
+fieldnames = ['EID', 'Abstract']
+dict_writer = csv.DictWriter(open('./data/abstracts.txt', 'a+'), fieldnames=fieldnames)
+dict_writer.writeheader()
+
+rows = []
 for eid in eids[ctr:]:
-    abstract = retrieve_abstracts(headers, eid)
-    abstracts.append(abstract)
+	abstract = retrieve_abstracts(headers, eid)
+	rows.append({'EID':eid, 'Abstract':abstract})
 	ctr += 1
 
 	if ctr % 10000 == 0:
 		json.dump({'ctr':ctr}, open('./data/ctr.json', 'w'))
-		fwrite.write("/n".join(abstracts))
-		abstracts = []
+		# fwrite.write("/n".join(abstracts))
+		dict_writer.writerows(rows)
+		rows = []
 
