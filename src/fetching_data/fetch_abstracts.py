@@ -21,6 +21,11 @@ def retrieve_abstracts(headers, eid):
 	r = requests.get(url, headers = headers)
 	results = json.loads(r.text)
 
+	# find out quota limits
+	print ("X-RateLimit-Limit: ", r.headers['X-RateLimit-Limit'])
+	print ("X-RateLimit-Remaining: ", r.headers['X-RateLimit-Remaining'])
+	print ("X-RateLimit-Reset: ", r.headers['X-RateLimit-Reset'])
+
 	return results['abstracts-retrieval-response']['coredata']['dc:description']
 
 
@@ -51,8 +56,9 @@ dict_writer = csv.DictWriter(open('./data/abstracts.txt', 'a+'), fieldnames=fiel
 dict_writer.writeheader()
 
 rows = []
-for eid in eids[ctr:]:
+for eid in eids_to_extract[ctr:]:
 	abstract = retrieve_abstracts(headers, eid)
+	print (ctr, "/", len(eids_to_extract))
 	rows.append({'EID':eid, 'Abstract':abstract})
 	ctr += 1
 

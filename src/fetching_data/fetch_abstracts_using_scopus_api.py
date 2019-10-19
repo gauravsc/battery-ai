@@ -7,6 +7,7 @@ from elsapy.elssearch import ElsSearch
 import json, requests
 import urllib.parse
 import os.path
+import csv
 
 ## Load configuration
 con_file = open("./config/config.json")
@@ -25,16 +26,22 @@ def retrieve_abstracts(headers, eid):
     return r['abstracts-retrieval-response']['coredata']['dc:description']
 
 
-def extract_eids(headers, word):
+def store_eids_and_abstracts(headers, word):
     # all results
     base_url = 'https://api.elsevier.com/content/search/scopus?'
-    query = "TITLE-ABS-KEY("+ word +") PUBYEAR > 2010"
-    count = 200
+    query = "TITLE-ABS-KEY("+ word +")"
+    count = 25
     cursor = '*'
+
+    fieldnames = ['EID', 'URL', 'Title', 'Abstract']
+    dict_writer = csv.DictWriter(open('./data/abstracts/'+ word +'.csv', 'w'), fieldnames=fieldnames)
+    dict_writer.writeheader()
 
     params = {
         'query': query,
         'start': '0',
+        'view': 'COMPLETE',
+        'data': '2008-2018',
         'count': count
         }
 
@@ -43,15 +50,18 @@ def extract_eids(headers, word):
     total_results = int(r['search-results']['opensearch:totalResults'])
     # total_results = 400
 
-    start = 0; eids = []
+    start = 0; rows = []
     while start < total_results - count:
         print (start, "/", total_results)
 
         params = {
         'query': query,
         'count': count,
+        'view': 'COMPLETE',
+        'data': '2008-2018',
         'cursor': cursor
         }
+# 'field': 'eid,url,title,description',
 
         url = base_url+urllib.parse.urlencode(params)
         r = requests.get(url, headers = headers)
@@ -60,28 +70,24 @@ def extract_eids(headers, word):
         # set cursor to next
         if 'search-results' in results and 'cursor' in results['search-results']:
             cursor = results['search-results']['cursor']['@next']
-        else:
-            print (results)
         
         if 'search-results' in results and 'entry' in results['search-results']:
             for doc in results['search-results']['entry']:
-                if 'eid' in doc:
-                    eids.append(doc['eid'])
+                if 'eid' in doc and 'dc:description' in doc and 'prism:url' in doc and 'dc:title' in doc:
+                    rows.append({'EID':doc['eid'], 'URL':doc['prism:url'], 'Title':doc['dc:title'], 'Abstract':doc['dc:description']})
         else:
             print (results.keys(), results)
 
         # eids.append([doc['eid'] for doc in results['search-results']['entry']])
         start += count
-
-        # print current length of the eids
-        print ("EIDS already extracted for " , word, ": ", len(eids))
+        print ("# of rows written", len(rows))
+        dict_writer.writerows(rows)
+        rows = []
 
         # find out quota limits
         print ("X-RateLimit-Limit: ", r.headers['X-RateLimit-Limit'])
         print ("X-RateLimit-Remaining: ", r.headers['X-RateLimit-Remaining'])
         print ("X-RateLimit-Reset: ", r.headers['X-RateLimit-Reset'])
-
-    return set(eids)
 
 
 #  words_to_search = ['Electrochemical', 'electrochemistry', 'optoelectronic properties',
@@ -91,11 +97,12 @@ def extract_eids(headers, word):
 # 'organic semiconductors', 'inorganic semiconductors', 'organic electronics', 'Energy storage']
 
 
-with open('./src/search_terms.csv', 'r') as content_file:
+with open('./src/search_terms.csv', 'r', encoding='utf-8-sig') as content_file:
     words_to_search = content_file.read()
-    words_to_search = words_to_search.split('\n')
-    words_to_search = [word.strip() for word in words_to_search]    
+    words_to_search = words_to_search.strip().split('\n')
+    words_to_search = [word.strip().lower() for word in words_to_search]    
 
+print (words_to_search)
 
 headers = {
             "X-ELS-APIKey"  : config['apikey'],
@@ -103,22 +110,9 @@ headers = {
             }
 
 for word in words_to_search:
-    if os.path.isfile('./data/eids/eids_to_extract_'+word+'.json'):
+    if os.path.isfile('./data/abstracts/'+word+'.csv'):
         # this words has already been extracted
         continue
-    else:
-        # set of eids to avoid duplication
-        set_of_eids = set()
     
-    print ("words being searched: ", word)
-    eids = extract_eids(headers, word)
-    set_of_eids = set_of_eids.union(eids)
-    print ("***************************")
-    print ("# EIDS extracted: ", len(set_of_eids))
-    print ("***************************")
-    json.dump(list(set_of_eids), open('./data/eids/eids_to_extract_'+word+'.json', 'w'))
-
-
-# for eid in eids:
-#     abstract = retrieve_abstracts(headers, eid)
-#     break
+    print ("Word being searched: ", word)
+    store_eids_and_abstracts(headers, word)
