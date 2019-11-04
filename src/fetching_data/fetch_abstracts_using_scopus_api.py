@@ -10,21 +10,17 @@ import os.path
 import csv
 
 ## Load configuration
-con_file = open("./config/config.json")
-config = json.load(con_file)
-con_file.close()
+config = json.load(open("./config/config.json", 'r'))
 
 ## initialize client
 client = ElsClient(config['apikey'])
 client.inst_token = config['insttoken']
-
 
 def retrieve_abstracts(headers, eid):
     url = 'https://api.elsevier.com/content/abstract/eid/'+eid
     r = requests.get(url, headers = headers)
     r = json.loads(r.text)
     return r['abstracts-retrieval-response']['coredata']['dc:description']
-
 
 def store_eids_and_abstracts(headers, word):
     # all results
@@ -95,7 +91,6 @@ def store_eids_and_abstracts(headers, word):
 # 'metal oxides', 'conducting metal oxides', 'battery materials', 'photovoltaic materials',
 # 'semiconductor materials', 'electrolytes', 'cathode materials', 'anode materials', 
 # 'organic semiconductors', 'inorganic semiconductors', 'organic electronics', 'Energy storage']
-
 
 with open('./src/search_terms.csv', 'r', encoding='utf-8-sig') as content_file:
     words_to_search = content_file.read()
